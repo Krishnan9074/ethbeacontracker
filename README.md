@@ -1,6 +1,6 @@
 # Ethereum Deposit Tracker
 
-This project is an Ethereum deposit tracking system that monitors transactions on a specified beacon contract address. It utilizes Node.js, Express, MongoDB, and Telegram for notifications and Nextjs for frontend nad Infura to access the Ethereum Mainnet
+This project is an Ethereum deposit tracking system that monitors transactions on a specified beacon contract address. It utilizes Node.js, Express, MongoDB, and Telegram for notifications and Nextjs for frontend and Infura to access the Ethereum Mainnet
 # Project Screenshots :
 
 <img width="1466" alt="image" src="https://github.com/user-attachments/assets/e3dcefd8-a316-4c3e-805e-cc4bc9497df5">
