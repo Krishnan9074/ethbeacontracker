@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethereum Deposit Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        #deposits { margin-bottom: 20px; }
+        #latest-transactions { margin-bottom: 20px; }
+        #chart-container { display: flex; flex-wrap: wrap; gap: 20px; }
+        canvas { width: 100%; max-width: 400px; }
+    </style>
+</head>
+<body>
+    <h1>Ethereum Deposit Tracker</h1>
+    <div id="stats"></div>
+    <div id="deposits"></div>
+    <div id="latest-transactions"></div>
+
+    <div id="chart-container">
+        <div>
+            <canvas id="line-chart"></canvas>
+            <h3>Deposit Fees (Line Chart)</h3>
+        </div>
+        <div>
+            <canvas id="bar-chart"></canvas>
+            <h3>Deposit Fees by Block (Bar Chart)</h3>
+        </div>
+        <div>
+            <canvas id="pie-chart"></canvas>
+            <h3>Fee Distribution (Pie Chart)</h3>
+        </div>
+        <div>
+            <canvas id="radar-chart"></canvas>
+            <h3>Fee Comparison (Radar Chart)</h3>
+        </div>
+    </div>
+
+    <script>
+        async function fetchDeposits() {
+            const response = await fetch('/api/deposits');
+            const data = await response.json();
+            return data.deposits;
+        }
+
+        async function fetchStats() {
+            const response = await fetch('/api/deposits/stats');
+            const data = await response.json();
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = `
+                <h2>Statistics</h2>
+                <p>Total Deposits: ${data.totalDeposits}</p>
+                <p>Latest Block: ${data.latestBlockNumber}</p>
+                <p>Oldest Block: ${data.oldestBlockNumber}</p>
+            `;
+        }
+
+        async function updateCharts() {
+            const deposits = await fetchDeposits();
+            const blockNumbers = deposits.map(d => d.blockNumber);
+            const fees = deposits.map(d => parseFloat(d.fee));
+            const feeDistribution = deposits.reduce((acc, d) => {
+                acc[d.blockNumber] = (acc[d.blockNumber] || 0) + parseFloat(d.fee);
+                return acc;
+            }, {});
+
+            // Line Chart
+            new Chart(document.getElementById('line-chart'), {
+                type: 'line',
+                data: {
+                    labels: blockNumbers,
+                    datasets: [{
+                        label: 'Deposit Fees',
+                        data: fees,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Bar Chart
+            new Chart(document.getElementById('bar-chart'), {
+                type: 'bar',
+                data: {
+                    labels: blockNumbers,
+                    datasets: [{
+                        label: 'Deposit Fees by Block',
+                        data: fees,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgb(75, 192, 192)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Pie Chart
+            new Chart(document.getElementById('pie-chart'), {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(feeDistribution),
+                    datasets: [{
+                        label: 'Fee Distribution',
+                        data: Object.values(feeDistribution),
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(75, 192, 192, 0.2)',
+                            'rgba(153, 102, 255, 0.2)'
+                        ],
+                        borderColor: [
+                            'rgb(255, 99, 132)',
+                            'rgb(54, 162, 235)',
+                            'rgb(255, 206, 86)',
+                            'rgb(75, 192, 192)',
+                            'rgb(153, 102, 255)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+
+            // Radar Chart
+            new Chart(document.getElementById('radar-chart'), {
+                type: 'radar',
+                data: {
+                    labels: blockNumbers,
+                    datasets: [{
+                        label: 'Deposit Fees',
+                        data: fees,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgb(75, 192, 192)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        async function updateLatestTransactions() {
+            const deposits = await fetchDeposits();
+            const latestTransactionsDiv = document.getElementById('latest-transactions');
+            latestTransactionsDiv.innerHTML = '<h2>Latest Transactions</h2>';
+            deposits.slice(-5).reverse().forEach(deposit => {
+                latestTransactionsDiv.innerHTML += `<p>Block ${deposit.blockNumber}: ${deposit.hash} - Fee: ${deposit.fee}</p>`;
+            });
+        }
+
+        async function updateAll() {
+            await fetchStats();
+            await updateCharts();
+            await updateLatestTransactions();
+        }
+
+        updateAll();
+        setInterval(updateAll, 60000);
+    </script>
+</body>
+</html>
